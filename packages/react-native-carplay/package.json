@@ -10,6 +10,7 @@
     "lib",
     "ios",
     "android",
+    "plugin",
     "react-native-carplay.podspec"
   ],
   "podspecPath": "./react-native-carplay.podspec",
@@ -17,7 +18,8 @@
     "prepack": "yarn run build",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "typecheck": "tsc --noEmit",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && yarn build:plugin",
+    "build:plugin": "cd plugin && tsc",
     "fix-all-files": "eslint . --ext .ts,.tsx,.js,.jsx --fix"
   },
   "repository": {
@@ -59,6 +61,7 @@
     "cross-env": "7.0.3",
     "docusaurus-plugin-typedoc": "0.19.2",
     "eslint": "^8.19.0",
+    "expo": "^52.0.0",
     "jest": "29.5.0",
     "microbundle": "0.14.2",
     "prettier": "2.6.2",
@@ -71,5 +74,8 @@
   "directories": {
     "lib": "lib"
   },
-  "types": "./lib/index.d.ts"
+  "types": "./lib/index.d.ts",
+  "dependencies": {
+    "expo-module-scripts": "^5.0.7"
+  }
 }
