@@ -7,7 +7,8 @@
     "check:install": "yarn dlx @yarnpkg/doctor@3.1.4 ."
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/example"
   ],
   "engines": {
     "node": "^14.13.1 || >=16.0.0",

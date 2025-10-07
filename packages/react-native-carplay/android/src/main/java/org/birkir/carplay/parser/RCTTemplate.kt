@@ -2,6 +2,7 @@ package org.birkir.carplay.parser
 
 import android.text.Spannable
 import android.text.SpannableString
+import android.text.TextUtils
 import android.util.Log
 import androidx.car.app.CarContext
 import androidx.car.app.HostException
@@ -184,8 +185,8 @@ abstract class RCTTemplate(
             )
           }
         }
-        if (titleVariants.size() > 1) {
-          setText(titleVariants.getString(1))
+        if (titleVariants.size() > 1 && !TextUtils.isEmpty(titleVariants.getString(1))) {
+          setText(titleVariants.getString(1)!!)
         }
       }
       item.getMap("image")?.let { setImage(Parser.parseCarIcon(it, context)) }
@@ -234,7 +235,7 @@ abstract class RCTTemplate(
     )
     props.getArray("texts")?.let {
       for (i in 0 until it.size()) {
-        builder.addText(it.getString(i))
+        builder.addText(it.getString(i)!!)
       }
     }
     props.getMap("image")?.let {

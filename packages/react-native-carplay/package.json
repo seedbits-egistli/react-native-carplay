@@ -1,5 +1,5 @@
 {
-  "name": "@g4rb4g3/react-native-carplay",
+  "name": "react-native-carplay",
   "version": "2.7.19",
   "description": "CarPlay for React Native",
   "main": "lib/index.js",
@@ -76,6 +76,8 @@
   },
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "expo-module-scripts": "^5.0.7"
+    "expo": "~53.0.0",
+    "expo-module-scripts": "^5.0.7",
+    "react-native": "^0.79.0"
   }
 }
