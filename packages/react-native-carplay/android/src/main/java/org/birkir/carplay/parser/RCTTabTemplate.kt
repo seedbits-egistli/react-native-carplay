@@ -38,8 +38,8 @@ class RCTTabTemplate(
   private fun parseTab(props: ReadableMap): Tab {
     return Tab.Builder().apply {
       props.getString("id")?.let { setContentId(it) }
-      props.getString("title")?.let { setTitle(it) }
-      props.getMap("image")?.let { setIcon(Parser.parseCarIcon(it, context)) }
+      props.getMap("config")?.getString("title")?.let { setTitle(it) }
+      props.getMap("config")?.getMap("tabImage")?.let { setIcon(Parser.parseCarIcon(it, context)) }
     }.build()
   }
 

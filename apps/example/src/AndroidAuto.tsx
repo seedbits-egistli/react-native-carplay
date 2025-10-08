@@ -1,11 +1,11 @@
 import React from 'react';
 import { Button, Text, View } from 'react-native';
 import { CarPlay } from 'react-native-carplay';
-import { menuTemplate } from './templates/menu.template';
+import { rootTemplate } from './templates/root.template';
 
 export function AndroidAutoModule() {
   CarPlay.emitter.addListener('didConnect', () => {
-    CarPlay.setRootTemplate(menuTemplate);
+    CarPlay.setRootTemplate(rootTemplate);
   });
   CarPlay.emitter.addListener('backButtonPressed', () => {
     CarPlay.popTemplate();

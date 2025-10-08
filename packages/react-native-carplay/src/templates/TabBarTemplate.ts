@@ -1,3 +1,4 @@
+import { Action } from 'src/interfaces/Action';
 import { CarPlay } from '../CarPlay';
 import { GridTemplate } from './GridTemplate';
 import { InformationTemplate } from './InformationTemplate';
@@ -20,6 +21,12 @@ export interface TabBarTemplateConfig extends TemplateConfig {
    * The templates to show as tabs.
    */
   templates: TabBarTemplates[];
+
+  /**
+   * Sets the Action that will be displayed in the header of the template.
+   * @namespace Android
+   */
+  headerAction?: Action<'appIcon' | 'back'>;
 
   onTemplateSelect(
     template: TabBarTemplates | undefined,
