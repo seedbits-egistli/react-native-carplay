@@ -91,7 +91,7 @@ repositories {
 }
 
 dependencies {
-  compileOnly "com.facebook.react:react-android:0.76.9"
+  compileOnly "com.facebook.react:react-android:0.79.0"
   implementation 'com.google.android.gms:play-services-base:18.3.0'
   implementation 'com.google.android.gms:play-services-auth:21.0.0'
   implementation "androidx.car.app:app:1.7.0"
