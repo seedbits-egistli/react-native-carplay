@@ -7,6 +7,9 @@ import android.util.Log
 import androidx.car.app.CarContext
 import androidx.car.app.HostException
 import androidx.car.app.constraints.ConstraintManager
+import androidx.car.app.model.Action
+import androidx.car.app.model.Action.FLAG_IS_PERSISTENT
+import androidx.car.app.model.Action.FLAG_PRIMARY
 import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarLocation
 import androidx.car.app.model.DistanceSpan
@@ -28,6 +31,8 @@ import androidx.car.app.versioning.CarAppApiLevels
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import org.birkir.carplay.BuildConfig
+import org.birkir.carplay.parser.Parser.Companion.parseCarIcon
+import org.birkir.carplay.parser.Parser.Companion.parseColor
 import org.birkir.carplay.screens.CarScreenContext
 import org.birkir.carplay.utils.EventEmitter
 import kotlin.math.min
@@ -329,6 +334,46 @@ abstract class RCTTemplate(
     } else {
       parseMessageInfo(map)
     }
+  }
+
+  fun parseAction(map: ReadableMap?): Action {
+    val type = map?.getString("type")
+    if (type == "appIcon") {
+      return Action.APP_ICON
+    } else if (type == "back") {
+      return Action.BACK
+    } else if (type == "pan") {
+      return Action.PAN
+    }
+    val id = map?.getString("id")
+    val builder = Action.Builder()
+    if (map != null) {
+      map.getString("title")?.let {
+        builder.setTitle(it)
+      }
+      map.getMap("icon")?.let {
+        builder.setIcon(parseCarIcon(it, context))
+      }
+      map.getString("visibility")?.let {
+        if (it == "primary") {
+          builder.setFlags(FLAG_PRIMARY)
+        }
+        if (it == "persistent") {
+          builder.setFlags(FLAG_IS_PERSISTENT)
+        }
+      }
+      try {
+        builder.setBackgroundColor(parseColor(map.getString("backgroundColor")))
+      } catch (e: Exception) {
+        e.printStackTrace()
+      }
+      builder.setOnClickListener {
+        if (id != null) {
+          eventEmitter.buttonPressed(id)
+        }
+      }
+    }
+    return builder.build()
   }
 
   private fun getMaxContentSize(carContext: CarContext, contentType: Int, preferredContentSize: Int): Int {
