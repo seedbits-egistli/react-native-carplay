@@ -80,6 +80,8 @@ abstract class RCTTemplate(
         ItemListType.RouteList -> ConstraintManager.CONTENT_LIMIT_TYPE_ROUTE_LIST
       }
 
+      setNoItemsMessage("No items available")
+
       items?.let {
         for (i in 0 until getMaxContentSize(
           carContext = context,

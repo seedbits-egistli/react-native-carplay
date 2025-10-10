@@ -1,5 +1,6 @@
 package org.birkir.carplay.parser
 
+import android.util.Log
 import androidx.car.app.CarContext
 import androidx.car.app.model.PlaceListMapTemplate
 import androidx.car.app.model.Template
@@ -72,10 +73,7 @@ class RCTMapTemplate(
             setCurrentLocationEnabled(props.getBoolean("currentLocationEnabled"))
           }
           headerAction?.let { setHeaderAction(it) }
-          props.getArray("items")?.let {
-            setItemList(parseItemList(it, ItemListType.PlaceListNavigation))
-          }
-          setLoading(props.isLoading())
+          setItemList(parseItemList(props.getArray("items"), ItemListType.PlaceListNavigation))
           setOnContentRefreshListener {
             // @todo eventEmitter?.contentDidRefresh
           }
