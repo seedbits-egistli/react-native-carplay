@@ -144,6 +144,7 @@ abstract class RCTTemplate(
       }
       item.getString("detailText")?.let { addText(it) }
       item.getMap("image")?.let { setImage(Parser.parseCarIcon(it, context)) }
+      setBrowsable(item.hasKey("browsable") && item.getBoolean("browsable"))
       if (item.hasKey("browsable") && item.getBoolean("browsable")) {
         setOnClickListener {
           eventEmitter.didSelectListItem(
