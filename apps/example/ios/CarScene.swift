@@ -15,7 +15,7 @@ class CarSceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
       return
     }
     
-    RNCarPlay.connect(with: interfaceController, window: templateApplicationScene.carWindow);
+    RNCarPlay.connect(with: interfaceController, window: templateApplicationScene.carWindow, scene: templateApplicationScene);
   }
 
   func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didDisconnectInterfaceController interfaceController: CPInterfaceController) {

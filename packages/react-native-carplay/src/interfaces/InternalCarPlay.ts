@@ -72,6 +72,15 @@ export interface InternalCarPlay extends NativeModule {
   initCluster(clusterId: string, config: unknown): void;
   checkForClusterConnection(clusterId: string): void;
   /**
+   * Opens a URL using the CarPlay scene's openURL method.
+   * This is required because React Native's Linking API doesn't work in CarPlay context.
+   * @param url The URL string to open
+   * @param options Optional options object with `universalLinksOnly` boolean property
+   * @returns Promise that resolves to true if the URL was opened successfully
+   * @namespace iOS
+   */
+  openURL(url: string, options?: { universalLinksOnly?: boolean }): Promise<boolean>;
+  /**
    * @namespace Android
    */
   reload(): void;

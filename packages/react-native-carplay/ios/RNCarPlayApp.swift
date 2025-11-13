@@ -5,6 +5,7 @@ import React
 public class RNCarPlayApp: NSObject, CPInterfaceControllerDelegate {
     @objc public var interfaceController: CPInterfaceController?
     var window: UIWindow?
+    @objc public var scene: CPTemplateApplicationScene?
 
     var bridge: RCTBridge?
     var moduleName: String = "carplay-app"
@@ -24,7 +25,8 @@ public class RNCarPlayApp: NSObject, CPInterfaceControllerDelegate {
 
     @objc public func connectScene(
         interfaceController: CPInterfaceController,
-        window: UIWindow
+        window: UIWindow,
+        scene: CPTemplateApplicationScene?
     ) {
         if let name = Bundle.main.object(
             forInfoDictionaryKey: "RNCPSplashScreenStoryboard") as? String,
@@ -41,6 +43,7 @@ public class RNCarPlayApp: NSObject, CPInterfaceControllerDelegate {
 
         self.interfaceController = interfaceController
         self.window = window
+        self.scene = scene
 
         self.interfaceController?.delegate = self
         self.isConnected = true
@@ -101,6 +104,7 @@ public class RNCarPlayApp: NSObject, CPInterfaceControllerDelegate {
         self.interfaceController = nil
         self.window?.rootViewController = nil
         self.window = nil
+        self.scene = nil
         self.isConnected = false
 
         RNCarPlayUtils.sendRNCarPlayEvent(name: "didDisconnect", body: nil)

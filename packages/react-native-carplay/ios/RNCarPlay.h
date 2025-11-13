@@ -20,7 +20,7 @@ typedef void(^SelectedResultBlock)(void);
 @property (nonatomic, copy) SelectedResultBlock _Nullable selectedResultBlock;
 @property (nonatomic) BOOL isNowPlayingActive;
 
-+ (void) connectWithInterfaceController:(CPInterfaceController*_Nullable)interfaceController window:(CPWindow*_Nonnull)window;
++ (void) connectWithInterfaceController:(CPInterfaceController*_Nullable)interfaceController window:(CPWindow*_Nonnull)window scene:(CPTemplateApplicationScene*_Nullable)scene;
 + (void) disconnect;
 + (void) stateChanged:(BOOL)isVisible;
 

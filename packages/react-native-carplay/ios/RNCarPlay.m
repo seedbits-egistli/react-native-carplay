@@ -54,12 +54,12 @@ static NSMutableDictionary<NSNumber *, CPNavigationAlert *> *navigationAlertWrap
     };
 }
 
-+ (void) connectWithInterfaceController:(CPInterfaceController*)interfaceController window:(CPWindow*)window {
++ (void) connectWithInterfaceController:(CPInterfaceController*)interfaceController window:(CPWindow*)window scene:(CPTemplateApplicationScene*)scene {
     RNCPStore * store = [RNCPStore sharedManager];
     if (store.app == nil) {
         store.app = [[RNCarPlayApp alloc] init];
     }
-    [store.app connectSceneWithInterfaceController:interfaceController window:window];
+    [store.app connectSceneWithInterfaceController:interfaceController window:window scene:scene];
 }
 
 + (void) disconnect {
@@ -1128,6 +1128,42 @@ RCT_EXPORT_METHOD(getRootTemplate: (RCTPromiseResolveBlock)resolve
         return;
     }
     resolve(store.rootTemplateId);
+}
+
+RCT_REMAP_METHOD(openURL,
+                 url:(NSString *)urlString
+                 options:(NSDictionary *)options
+                 openURLWithResolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject) {
+    RNCPStore *store = [RNCPStore sharedManager];
+    RNCarPlayApp* app = store.app;
+    
+    if (!app || !app.scene) {
+        reject(@"no_scene", @"CarPlay scene is not connected", nil);
+        return;
+    }
+    
+    NSURL *url = [NSURL URLWithString:urlString];
+    if (!url) {
+        reject(@"invalid_url", @"Invalid URL string", nil);
+        return;
+    }
+    
+    UISceneOpenExternalURLOptions *openOptions = nil;
+    if (options) {
+        openOptions = [[UISceneOpenExternalURLOptions alloc] init];
+        if (options[@"universalLinksOnly"]) {
+            openOptions.universalLinksOnly = [options[@"universalLinksOnly"] boolValue];
+        }
+    }
+    
+    [app.scene openURL:url options:openOptions completionHandler:^(BOOL success) {
+        if (success) {
+            resolve(@YES);
+        } else {
+            reject(@"open_failed", @"Failed to open URL", nil);
+        }
+    }];
 }
 
 # pragma parsers

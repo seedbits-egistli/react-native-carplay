@@ -200,7 +200,7 @@ class CarSceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
       return
     }
     appDelegate.startReactNative(withWindow: templateApplicationScene.carWindow, connectionOptions: nil)
-    RNCarPlay.connect(with:interfaceController, window: templateApplicationScene.carWindow)
+    RNCarPlay.connect(with:interfaceController, window: templateApplicationScene.carWindow, scene: templateApplicationScene)
     EXDevLauncherController.sharedInstance().autoSetupStart(nil)
     NSLog("carplay connected");
   }
