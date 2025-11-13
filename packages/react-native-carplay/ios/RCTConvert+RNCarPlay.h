@@ -15,4 +15,6 @@
 + (MKMapItem*)MKMapItem:(id)json;
 + (CPPointOfInterest*)CPPointOfInterest:(id)json;
 + (CPAlertActionStyle)CPAlertActionStyle:(id)json;
++ (CPTextButtonStyle)CPTextButtonStyle:(id)json;
++ (CPTextButton*)CPTextButton:(id)json withHandler:(void (^)(CPTextButton * _Nonnull))handler templateId:(NSString*)templateId buttonId:(NSString*)buttonId;
 @end

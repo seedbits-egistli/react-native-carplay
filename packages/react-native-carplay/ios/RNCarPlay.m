@@ -462,6 +462,31 @@ RCT_EXPORT_METHOD(createTemplate:(NSString *)templateId config:(NSDictionary*)co
         CPPointOfInterestTemplate *poiTemplate = [[CPPointOfInterestTemplate alloc] initWithTitle:title pointsOfInterest:items selectedIndex:selectedIndex];
         [poiTemplate setBackButton:backButton];
         poiTemplate.pointOfInterestDelegate = self;
+        
+        // Parse and set primary button
+        if (config[@"primaryButton"]) {
+            NSDictionary *primaryButtonDict = [RCTConvert NSDictionary:config[@"primaryButton"]];
+            NSString *primaryButtonId = [RCTConvert NSString:primaryButtonDict[@"id"]];
+            CPTextButton *primaryButton = [RCTConvert CPTextButton:primaryButtonDict withHandler:^(__kindof CPTextButton * _Nonnull button) {
+                if (self->hasListeners) {
+                    [self sendTemplateEventWithName:poiTemplate name:@"primaryButtonPressed" json:@{@"templateId":templateId, @"id": primaryButtonId}];
+                }
+            } templateId:templateId buttonId:primaryButtonId];
+            poiTemplate.primaryButton = primaryButton;
+        }
+        
+        // Parse and set secondary button
+        if (config[@"secondaryButton"]) {
+            NSDictionary *secondaryButtonDict = [RCTConvert NSDictionary:config[@"secondaryButton"]];
+            NSString *secondaryButtonId = [RCTConvert NSString:secondaryButtonDict[@"id"]];
+            CPTextButton *secondaryButton = [RCTConvert CPTextButton:secondaryButtonDict withHandler:^(__kindof CPTextButton * _Nonnull button) {
+                if (self->hasListeners) {
+                    [self sendTemplateEventWithName:poiTemplate name:@"secondaryButtonPressed" json:@{@"templateId":templateId, @"id": secondaryButtonId}];
+                }
+            } templateId:templateId buttonId:secondaryButtonId];
+            poiTemplate.secondaryButton = secondaryButton;
+        }
+        
         carPlayTemplate = poiTemplate;
     } else if ([type isEqualToString:@"information"]) {
         NSString *title = [RCTConvert NSString:config[@"title"]];

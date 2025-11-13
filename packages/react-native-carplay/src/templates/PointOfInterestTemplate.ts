@@ -14,6 +14,12 @@ export interface PointOfInterestItem {
   detailSummary?: string;
 }
 
+export interface PointOfInterestButton {
+  id: string;
+  title: string;
+  style?: 'normal' | 'confirm' | 'cancel';
+}
+
 export interface PointOfInterestTemplateConfig extends TemplateConfig {
   title: string;
   items: PointOfInterestItem[];
@@ -39,6 +45,26 @@ export interface PointOfInterestTemplateConfig extends TemplateConfig {
    * Title to be shown on the back button, defaults to no text so only the < icon is shown
    */
   backButtonTitle?: string;
+
+  /**
+   * Primary button displayed on the template
+   */
+  primaryButton?: PointOfInterestButton;
+
+  /**
+   * Secondary button displayed on the template
+   */
+  secondaryButton?: PointOfInterestButton;
+
+  /**
+   * Fired when the primary button is pressed
+   */
+  onPrimaryButtonPressed?(e: { id: string; templateId: string }): void;
+
+  /**
+   * Fired when the secondary button is pressed
+   */
+  onSecondaryButtonPressed?(e: { id: string; templateId: string }): void;
 }
 
 export class PointOfInterestTemplate extends Template<PointOfInterestTemplateConfig> {
@@ -51,6 +77,8 @@ export class PointOfInterestTemplate extends Template<PointOfInterestTemplateCon
       didSelectPointOfInterest: 'onPointOfInterestSelect',
       didChangeMapRegion: 'onChangeMapRegion',
       backButtonPressed: 'onBackButtonPressed',
+      primaryButtonPressed: 'onPrimaryButtonPressed',
+      secondaryButtonPressed: 'onSecondaryButtonPressed',
     };
   }
 }

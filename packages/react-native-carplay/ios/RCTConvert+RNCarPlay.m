@@ -35,6 +35,12 @@ RCT_ENUM_CONVERTER(CPAssistantCellActionType, (@{
                                       @"startCall": @(CPAssistantCellActionTypeStartCall)
                                       }), CPAssistantCellActionTypeStartCall, integerValue)
 
+RCT_ENUM_CONVERTER(CPTextButtonStyle, (@{
+                                      @"normal": @(CPTextButtonStyleNormal),
+                                      @"confirm": @(CPTextButtonStyleConfirm),
+                                      @"cancel": @(CPTextButtonStyleCancel)
+                                      }), CPTextButtonStyleNormal, integerValue)
+
 
 + (CPMapButton*)CPMapButton:(id)json withHandler:(void (^)(CPMapButton * _Nonnull mapButton))handler {
     CPMapButton *mapButton = [[CPMapButton alloc] initWithHandler:handler];
@@ -97,6 +103,19 @@ RCT_ENUM_CONVERTER(CPAssistantCellActionType, (@{
         return CPAlertActionStyleDestructive;
     }
     return CPAlertActionStyleDefault;
+}
+
++ (CPTextButton*)CPTextButton:(id)json withHandler:(void (^)(CPTextButton * _Nonnull))handler templateId:(NSString*)templateId buttonId:(NSString*)buttonId {
+    NSString *title = [RCTConvert NSString:json[@"title"]];
+    CPTextButtonStyle style = json[@"style"] ? [RCTConvert CPTextButtonStyle:json[@"style"]] : CPTextButtonStyleNormal;
+    
+    CPTextButton *textButton = [[CPTextButton alloc] initWithTitle:title textStyle:style handler:^(__kindof CPTextButton * _Nonnull button) {
+        if (handler) {
+            handler(button);
+        }
+    }];
+    
+    return textButton;
 }
 
 @end
