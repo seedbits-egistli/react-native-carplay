@@ -122,6 +122,7 @@ RCT_EXPORT_MODULE();
         @"albumArtistButtonPressed",
         // poi
         @"didSelectPointOfInterest",
+        @"didChangeMapRegion",
         // map
         @"mapButtonPressed",
         @"didUpdatePanGestureWithTranslation",
@@ -1940,7 +1941,7 @@ RCT_REMAP_METHOD(openURL,
 
 # pragma PointOfInterest
 -(void)pointOfInterestTemplate:(CPPointOfInterestTemplate *)pointOfInterestTemplate didChangeMapRegion:(MKCoordinateRegion)region {
-    // noop
+    [self sendTemplateEventWithName:pointOfInterestTemplate name:@"didChangeMapRegion" json:@{ @"region": @{ @"latitude": @(region.center.latitude), @"longitude": @(region.center.longitude), @"latitudeDelta": @(region.span.latitudeDelta), @"longitudeDelta": @(region.span.longitudeDelta) }}];
 }
 
 -(void)pointOfInterestTemplate:(CPPointOfInterestTemplate *)pointOfInterestTemplate didSelectPointOfInterest:(CPPointOfInterest *)pointOfInterest {
