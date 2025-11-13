@@ -19,7 +19,7 @@ export interface IosCarPlayProps {
 export const withIosCarPlay: ConfigPlugin<IosCarPlayProps> = (config, props) => {
   const phoneModuleName = props?.phoneModuleName ?? 'main';
   const supportsMultipleScenes =
-    props?.supportsMultipleScenes === undefined ? true : !!props.supportsMultipleScenes;
+    props?.supportsMultipleScenes === undefined ? false : !!props.supportsMultipleScenes;
   const entitlements = props?.entitlements ?? [];
 
   if (!entitlements.length) {
