@@ -454,7 +454,27 @@ RCT_EXPORT_METHOD(createTemplate:(NSString *)templateId config:(NSDictionary*)co
 
         NSArray<NSDictionary*> *_items = [RCTConvert NSDictionaryArray:config[@"items"]];
         for (NSDictionary *_item in _items) {
-            CPPointOfInterest *poi = [RCTConvert CPPointOfInterest:_item];
+            NSString *poiId = [RCTConvert NSString:_item[@"id"]];
+            NSString *primaryButtonId = _item[@"primaryButton"] ? [RCTConvert NSString:_item[@"primaryButton"][@"id"]] : nil;
+            NSString *secondaryButtonId = _item[@"secondaryButton"] ? [RCTConvert NSString:_item[@"secondaryButton"][@"id"]] : nil;
+            
+            CPPointOfInterest *poi = [RCTConvert CPPointOfInterest:_item withPrimaryButtonHandler:^(__kindof CPTextButton * _Nonnull button, NSString* poiId) {
+                if (self->hasListeners && primaryButtonId) {
+                    RNCPStore *store = [RNCPStore sharedManager];
+                    CPTemplate *template = [store findTemplateById:templateId];
+                    if (template) {
+                        [self sendTemplateEventWithName:template name:@"primaryButtonPressed" json:@{@"templateId":templateId, @"id": primaryButtonId, @"poiId": poiId}];
+                    }
+                }
+            } secondaryButtonHandler:^(__kindof CPTextButton * _Nonnull button, NSString* poiId) {
+                if (self->hasListeners && secondaryButtonId) {
+                    RNCPStore *store = [RNCPStore sharedManager];
+                    CPTemplate *template = [store findTemplateById:templateId];
+                    if (template) {
+                        [self sendTemplateEventWithName:template name:@"secondaryButtonPressed" json:@{@"templateId":templateId, @"id": secondaryButtonId, @"poiId": poiId}];
+                    }
+                }
+            } templateId:templateId poiId:poiId];
             [poi setUserInfo:_item];
             [items addObject:poi];
         }
@@ -462,31 +482,6 @@ RCT_EXPORT_METHOD(createTemplate:(NSString *)templateId config:(NSDictionary*)co
         CPPointOfInterestTemplate *poiTemplate = [[CPPointOfInterestTemplate alloc] initWithTitle:title pointsOfInterest:items selectedIndex:selectedIndex];
         [poiTemplate setBackButton:backButton];
         poiTemplate.pointOfInterestDelegate = self;
-        
-        // Parse and set primary button
-        if (config[@"primaryButton"]) {
-            NSDictionary *primaryButtonDict = [RCTConvert NSDictionary:config[@"primaryButton"]];
-            NSString *primaryButtonId = [RCTConvert NSString:primaryButtonDict[@"id"]];
-            CPTextButton *primaryButton = [RCTConvert CPTextButton:primaryButtonDict withHandler:^(__kindof CPTextButton * _Nonnull button) {
-                if (self->hasListeners) {
-                    [self sendTemplateEventWithName:poiTemplate name:@"primaryButtonPressed" json:@{@"templateId":templateId, @"id": primaryButtonId}];
-                }
-            } templateId:templateId buttonId:primaryButtonId];
-            poiTemplate.primaryButton = primaryButton;
-        }
-        
-        // Parse and set secondary button
-        if (config[@"secondaryButton"]) {
-            NSDictionary *secondaryButtonDict = [RCTConvert NSDictionary:config[@"secondaryButton"]];
-            NSString *secondaryButtonId = [RCTConvert NSString:secondaryButtonDict[@"id"]];
-            CPTextButton *secondaryButton = [RCTConvert CPTextButton:secondaryButtonDict withHandler:^(__kindof CPTextButton * _Nonnull button) {
-                if (self->hasListeners) {
-                    [self sendTemplateEventWithName:poiTemplate name:@"secondaryButtonPressed" json:@{@"templateId":templateId, @"id": secondaryButtonId}];
-                }
-            } templateId:templateId buttonId:secondaryButtonId];
-            poiTemplate.secondaryButton = secondaryButton;
-        }
-        
         carPlayTemplate = poiTemplate;
     } else if ([type isEqualToString:@"information"]) {
         NSString *title = [RCTConvert NSString:config[@"title"]];

@@ -13,7 +13,7 @@
 + (CPMapButton*)CPMapButton:(id)json withHandler:(void (^)(CPMapButton * _Nonnull mapButton))handler;
 + (CPRouteChoice*)CPRouteChoice:(id)json;
 + (MKMapItem*)MKMapItem:(id)json;
-+ (CPPointOfInterest*)CPPointOfInterest:(id)json;
++ (CPPointOfInterest*)CPPointOfInterest:(id)json withPrimaryButtonHandler:(void (^)(CPTextButton * _Nonnull, NSString*))primaryHandler secondaryButtonHandler:(void (^)(CPTextButton * _Nonnull, NSString*))secondaryHandler templateId:(NSString*)templateId poiId:(NSString*)poiId;
 + (CPAlertActionStyle)CPAlertActionStyle:(id)json;
 + (CPTextButtonStyle)CPTextButtonStyle:(id)json;
 + (CPTextButton*)CPTextButton:(id)json withHandler:(void (^)(CPTextButton * _Nonnull))handler templateId:(NSString*)templateId buttonId:(NSString*)buttonId;

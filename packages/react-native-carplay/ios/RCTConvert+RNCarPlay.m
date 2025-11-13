@@ -83,7 +83,7 @@ RCT_ENUM_CONVERTER(CPTextButtonStyle, (@{
                                 selectionSummaryVariants:selectionSummaryVariants];
 }
 
-+ (CPPointOfInterest*)CPPointOfInterest:(id)json {
++ (CPPointOfInterest*)CPPointOfInterest:(id)json withPrimaryButtonHandler:(void (^)(CPTextButton * _Nonnull, NSString*))primaryHandler secondaryButtonHandler:(void (^)(CPTextButton * _Nonnull, NSString*))secondaryHandler templateId:(NSString*)templateId poiId:(NSString*)poiId {
     MKMapItem *location = [RCTConvert MKMapItem:json[@"location"]];
     NSString *title = [RCTConvert NSString:json[@"title"]];
     NSString *subtitle = [RCTConvert NSString:json[@"subtitle"]];
@@ -93,6 +93,31 @@ RCT_ENUM_CONVERTER(CPTextButtonStyle, (@{
     NSString *detailSummary = [RCTConvert NSString:json[@"detailSummary"]];
 
     CPPointOfInterest *poi = [[CPPointOfInterest alloc] initWithLocation:location title:title subtitle:subtitle summary:summary detailTitle:detailTitle detailSubtitle:detailSubtitle detailSummary:detailSummary pinImage:nil];
+    
+    // Parse and set primary button if provided
+    if (json[@"primaryButton"]) {
+        NSDictionary *primaryButtonDict = [RCTConvert NSDictionary:json[@"primaryButton"]];
+        NSString *primaryButtonId = [RCTConvert NSString:primaryButtonDict[@"id"]];
+        CPTextButton *primaryButton = [RCTConvert CPTextButton:primaryButtonDict withHandler:^(__kindof CPTextButton * _Nonnull button) {
+            if (primaryHandler) {
+                primaryHandler(button, poiId);
+            }
+        } templateId:templateId buttonId:primaryButtonId];
+        poi.primaryButton = primaryButton;
+    }
+    
+    // Parse and set secondary button if provided
+    if (json[@"secondaryButton"]) {
+        NSDictionary *secondaryButtonDict = [RCTConvert NSDictionary:json[@"secondaryButton"]];
+        NSString *secondaryButtonId = [RCTConvert NSString:secondaryButtonDict[@"id"]];
+        CPTextButton *secondaryButton = [RCTConvert CPTextButton:secondaryButtonDict withHandler:^(__kindof CPTextButton * _Nonnull button) {
+            if (secondaryHandler) {
+                secondaryHandler(button, poiId);
+            }
+        } templateId:templateId buttonId:secondaryButtonId];
+        poi.secondaryButton = secondaryButton;
+    }
+    
     return poi;
 }
 

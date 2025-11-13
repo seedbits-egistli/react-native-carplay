@@ -12,6 +12,8 @@ export interface PointOfInterestItem {
   detailTitle?: string;
   detailSubtitle?: string;
   detailSummary?: string;
+  primaryButton?: PointOfInterestButton;
+  secondaryButton?: PointOfInterestButton;
 }
 
 export interface PointOfInterestButton {
@@ -47,24 +49,14 @@ export interface PointOfInterestTemplateConfig extends TemplateConfig {
   backButtonTitle?: string;
 
   /**
-   * Primary button displayed on the template
+   * Fired when the primary button is pressed on any POI item
    */
-  primaryButton?: PointOfInterestButton;
+  onPrimaryButtonPressed?(e: { id: string; templateId: string; poiId: string }): void;
 
   /**
-   * Secondary button displayed on the template
+   * Fired when the secondary button is pressed on any POI item
    */
-  secondaryButton?: PointOfInterestButton;
-
-  /**
-   * Fired when the primary button is pressed
-   */
-  onPrimaryButtonPressed?(e: { id: string; templateId: string }): void;
-
-  /**
-   * Fired when the secondary button is pressed
-   */
-  onSecondaryButtonPressed?(e: { id: string; templateId: string }): void;
+  onSecondaryButtonPressed?(e: { id: string; templateId: string; poiId: string }): void;
 }
 
 export class PointOfInterestTemplate extends Template<PointOfInterestTemplateConfig> {
