@@ -1,3 +1,5 @@
+import { ImageSourcePropType } from 'react-native/Libraries/Image/Image';
+import { CarPlay } from '../CarPlay';
 import { Template, TemplateConfig } from './Template';
 
 export interface PointOfInterestItem {
@@ -14,6 +16,7 @@ export interface PointOfInterestItem {
   detailSummary?: string;
   primaryButton?: PointOfInterestButton;
   secondaryButton?: PointOfInterestButton;
+  pinImage?: ImageSourcePropType;
 }
 
 export interface PointOfInterestButton {
@@ -73,4 +76,9 @@ export class PointOfInterestTemplate extends Template<PointOfInterestTemplateCon
       secondaryButtonPressed: 'onSecondaryButtonPressed',
     };
   }
+
+  public updatePointsOfInterest = (items: PointOfInterestItem[]) => {
+    this.config = { ...this.config, items };
+    return CarPlay.bridge.updatePointOfInterestTemplate(this.id, super.parseConfig({ items }));
+  };
 }

@@ -450,35 +450,9 @@ RCT_EXPORT_METHOD(createTemplate:(NSString *)templateId config:(NSDictionary*)co
         carPlayTemplate = alertTemplate;
     } else if ([type isEqualToString:@"poi"]) {
         NSString *title = [RCTConvert NSString:config[@"title"]];
-        NSMutableArray<__kindof CPPointOfInterest *> * items = [NSMutableArray new];
         NSUInteger selectedIndex = 0;
-
         NSArray<NSDictionary*> *_items = [RCTConvert NSDictionaryArray:config[@"items"]];
-        for (NSDictionary *_item in _items) {
-            NSString *poiId = [RCTConvert NSString:_item[@"id"]];
-            NSString *primaryButtonId = _item[@"primaryButton"] ? [RCTConvert NSString:_item[@"primaryButton"][@"id"]] : nil;
-            NSString *secondaryButtonId = _item[@"secondaryButton"] ? [RCTConvert NSString:_item[@"secondaryButton"][@"id"]] : nil;
-            
-            CPPointOfInterest *poi = [RCTConvert CPPointOfInterest:_item withPrimaryButtonHandler:^(__kindof CPTextButton * _Nonnull button, NSString* poiId) {
-                if (self->hasListeners && primaryButtonId) {
-                    RNCPStore *store = [RNCPStore sharedManager];
-                    CPTemplate *template = [store findTemplateById:templateId];
-                    if (template) {
-                        [self sendTemplateEventWithName:template name:@"primaryButtonPressed" json:@{@"templateId":templateId, @"id": primaryButtonId, @"poiId": poiId}];
-                    }
-                }
-            } secondaryButtonHandler:^(__kindof CPTextButton * _Nonnull button, NSString* poiId) {
-                if (self->hasListeners && secondaryButtonId) {
-                    RNCPStore *store = [RNCPStore sharedManager];
-                    CPTemplate *template = [store findTemplateById:templateId];
-                    if (template) {
-                        [self sendTemplateEventWithName:template name:@"secondaryButtonPressed" json:@{@"templateId":templateId, @"id": secondaryButtonId, @"poiId": poiId}];
-                    }
-                }
-            } templateId:templateId poiId:poiId];
-            [poi setUserInfo:_item];
-            [items addObject:poi];
-        }
+        NSArray<__kindof CPPointOfInterest *> * items = [self parsePointOfInterestItems:_items templateId:templateId];
 
         CPPointOfInterestTemplate *poiTemplate = [[CPPointOfInterestTemplate alloc] initWithTitle:title pointsOfInterest:items selectedIndex:selectedIndex];
         [poiTemplate setBackButton:backButton];
@@ -836,6 +810,20 @@ RCT_EXPORT_METHOD(updateListTemplateItem:(NSString *)templateId config:(NSDictio
         if (@available(iOS 14.0, *) && config[@"accessoryImage"]) {
             [item setAccessoryImage:[RCTConvert UIImage:config[@"accessoryImage"]]];
         }
+    } else {
+        NSLog(@"Failed to find template %@", template);
+    }
+}
+
+RCT_EXPORT_METHOD(updatePointOfInterestTemplate:(NSString *)templateId items:(NSDictionary*)config) {
+    RNCPStore *store = [RNCPStore sharedManager];
+    CPTemplate *template = [store findTemplateById:templateId];
+    if (template && [template isKindOfClass:[CPPointOfInterestTemplate class]]) {
+        CPPointOfInterestTemplate *poiTemplate = (CPPointOfInterestTemplate*) template;
+        NSArray<NSDictionary*> *_items = [RCTConvert NSDictionaryArray:config[@"items"]];
+        NSArray<__kindof CPPointOfInterest *> * items = [self parsePointOfInterestItems:_items templateId:templateId];
+        
+        [poiTemplate setPointsOfInterest:items selectedIndex:NSNotFound];
     } else {
         NSLog(@"Failed to find template %@", template);
     }
@@ -1420,6 +1408,38 @@ RCT_REMAP_METHOD(openURL,
     }
     
     return _items;
+}
+
+- (NSArray<__kindof CPPointOfInterest *>*)parsePointOfInterestItems:(NSArray*)items templateId:(NSString*)templateId {
+    NSMutableArray<__kindof CPPointOfInterest *> * parsedItems = [NSMutableArray new];
+    
+    for (NSDictionary *_item in items) {
+        NSString *poiId = [RCTConvert NSString:_item[@"id"]];
+        NSString *primaryButtonId = _item[@"primaryButton"] ? [RCTConvert NSString:_item[@"primaryButton"][@"id"]] : nil;
+        NSString *secondaryButtonId = _item[@"secondaryButton"] ? [RCTConvert NSString:_item[@"secondaryButton"][@"id"]] : nil;
+        
+        CPPointOfInterest *poi = [RCTConvert CPPointOfInterest:_item withPrimaryButtonHandler:^(__kindof CPTextButton * _Nonnull button, NSString* poiId) {
+            if (self->hasListeners && primaryButtonId) {
+                RNCPStore *store = [RNCPStore sharedManager];
+                CPTemplate *template = [store findTemplateById:templateId];
+                if (template) {
+                    [self sendTemplateEventWithName:template name:@"primaryButtonPressed" json:@{@"templateId":templateId, @"id": primaryButtonId, @"poiId": poiId}];
+                }
+            }
+        } secondaryButtonHandler:^(__kindof CPTextButton * _Nonnull button, NSString* poiId) {
+            if (self->hasListeners && secondaryButtonId) {
+                RNCPStore *store = [RNCPStore sharedManager];
+                CPTemplate *template = [store findTemplateById:templateId];
+                if (template) {
+                    [self sendTemplateEventWithName:template name:@"secondaryButtonPressed" json:@{@"templateId":templateId, @"id": secondaryButtonId, @"poiId": poiId}];
+                }
+            }
+        } templateId:templateId poiId:poiId];
+        [poi setUserInfo:_item];
+        [parsedItems addObject:poi];
+    }
+    
+    return parsedItems;
 }
 
 - (NSArray<CPTextButton*>*)parseInformationActions:(NSArray*)actions templateId:(NSString *)templateId {
