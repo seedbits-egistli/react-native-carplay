@@ -93,8 +93,6 @@ RCT_ENUM_CONVERTER(CPTextButtonStyle, (@{
     NSString *detailSummary = [RCTConvert NSString:json[@"detailSummary"]];
     UIImage *pinImage = [RCTConvert UIImage:json[@"pinImage"]];
 
-    CPPointOfInterest *poi = [[CPPointOfInterest alloc] initWithLocation:location title:title subtitle:subtitle summary:summary detailTitle:detailTitle detailSubtitle:detailSubtitle detailSummary:detailSummary pinImage:nil];
-
     CPPointOfInterest *poi = [[CPPointOfInterest alloc] initWithLocation:location title:title subtitle:subtitle summary:summary detailTitle:detailTitle detailSubtitle:detailSubtitle detailSummary:detailSummary pinImage:pinImage];
     
     // Parse and set primary button if provided
