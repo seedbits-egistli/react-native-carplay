@@ -139,7 +139,9 @@ function resolveProjectName(iosRoot: string, provided?: string): string {
 function generatePhoneSceneSwift(moduleName: string): string {
   return `import UIKit
 import react_native_carplay
+#if DEBUG
 import EXDevLauncher
+#endif
 
 @objc(PhoneSceneDelegate)
 class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
@@ -175,7 +177,9 @@ class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
     // However, when the app is scene-based, at the end of didFinishLaunchingWithOptions:, the app is not yet ready to start the React Native app because THERE IS NO WINDOW YET.
     // So we need to call the autoSetupStart manually here when getting a window from the scene.
     // This workaround requires PATCHes to expo-dev-launcher for it to not throw fatalError when the window is not yet ready.
+    #if DEBUG
     EXDevLauncherController.sharedInstance().autoSetupStart(self.window!)
+    #endif
   }
 }
 
@@ -186,7 +190,9 @@ function generateCarSceneSwift(moduleName: string): string {
   return `import Foundation
 import CarPlay
 import react_native_carplay
+#if DEBUG
 import EXDevLauncher
+#endif
 
 @objc(CarSceneDelegate)
 class CarSceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
@@ -201,7 +207,9 @@ class CarSceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     }
     appDelegate.startReactNative(withWindow: templateApplicationScene.carWindow, connectionOptions: nil)
     RNCarPlay.connect(with:interfaceController, window: templateApplicationScene.carWindow, scene: templateApplicationScene)
+    #if DEBUG
     EXDevLauncherController.sharedInstance().autoSetupStart(nil)
+    #endif
     NSLog("carplay connected");
   }
 
