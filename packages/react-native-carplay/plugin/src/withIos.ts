@@ -222,56 +222,139 @@ class CarSceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
 }
 
 function patchAppDelegateSwift(src: string, moduleName: string): string {
-  // Pattern to match the #if os(iOS) || os(tvOS) block with window creation and startReactNative
-  // Match from #if to the corresponding #endif, ensuring it contains the specific patterns
+  let result = src;
+
+  // Step 1: Comment out the window creation block if it exists
   const ifPattern = /#if\s+os\(iOS\)\s+\|\|\s+os\(tvOS\)/;
+  const ifMatch = ifPattern.exec(result);
 
-  const ifMatch = ifPattern.exec(src);
-  if (!ifMatch) {
-    return src; // No matching #if found
+  if (ifMatch) {
+    const startIndex = ifMatch.index;
+    const afterIf = result.substring(startIndex);
+    const endifPattern = /#endif/;
+    const endifMatch = endifPattern.exec(afterIf);
+
+    if (endifMatch) {
+      const endIndex = startIndex + endifMatch.index + '#endif'.length;
+      const blockContent = result.substring(startIndex, endIndex);
+
+      const hasWindowCreation = /window\s*=\s*UIWindow\(frame:\s*UIScreen\.main\.bounds\)/.test(
+        blockContent,
+      );
+      const hasMakeKeyAndVisible = /window\?\.makeKeyAndVisible\(\)/.test(blockContent);
+      const hasStartReactNative =
+        /factory\.startReactNative\([\s\S]*?launchOptions:\s*launchOptions\)/.test(blockContent);
+
+      if (hasWindowCreation && hasMakeKeyAndVisible && hasStartReactNative) {
+        // Comment out each line in the block
+        const commentedBlock = blockContent
+          .split('\n')
+          .map(line => {
+            const trimmed = line.trim();
+            // Don't add comment to empty lines, but preserve them
+            return trimmed ? `// ${line}` : line;
+          })
+          .join('\n');
+
+        // Add explanatory comment before the commented block
+        const replacement = `// This section is not needed for Scene-based application for supporting CarPlay.\n${commentedBlock}`;
+
+        result = result.substring(0, startIndex) + replacement + result.substring(endIndex);
+      }
+    }
   }
 
-  const startIndex = ifMatch.index;
-
-  // Find the matching #endif by looking for the next one after this #if
-  // (simple approach: find next #endif, assuming no nested #if/#endif)
-  const afterIf = src.substring(startIndex);
-  const endifPattern = /#endif/;
-  const endifMatch = endifPattern.exec(afterIf);
-
-  if (!endifMatch) {
-    return src; // No matching #endif found
-  }
-
-  const endIndex = startIndex + endifMatch.index + '#endif'.length;
-  const blockContent = src.substring(startIndex, endIndex);
-
-  // Check if this block contains the patterns we're looking for
-  const hasWindowCreation = /window\s*=\s*UIWindow\(frame:\s*UIScreen\.main\.bounds\)/.test(
-    blockContent,
+  // Step 2: Add startReactNative and connectionOptionsToLaunchOptions methods if they don't exist
+  const hasStartReactNativeMethod = /func\s+startReactNative\(withWindow\s+window:\s*UIWindow/.test(
+    result,
   );
-  const hasMakeKeyAndVisible = /window\?\.makeKeyAndVisible\(\)/.test(blockContent);
-  const hasStartReactNative =
-    /factory\.startReactNative\([\s\S]*?launchOptions:\s*launchOptions\)/.test(blockContent);
+  const hasConnectionOptionsHelper = /func\s+connectionOptionsToLaunchOptions\(/.test(result);
 
-  if (hasWindowCreation && hasMakeKeyAndVisible && hasStartReactNative) {
-    // Comment out each line in the block
-    const commentedBlock = blockContent
-      .split('\n')
-      .map(line => {
-        const trimmed = line.trim();
-        // Don't add comment to empty lines, but preserve them
-        return trimmed ? `// ${line}` : line;
-      })
-      .join('\n');
+  if (!hasStartReactNativeMethod || !hasConnectionOptionsHelper) {
+    // Find the AppDelegate class closing brace
+    // Look for the class definition first
+    const classPattern = /class\s+AppDelegate[^{]*\{/;
+    const classMatch = classPattern.exec(result);
 
-    // Add explanatory comment before the commented block
-    const replacement = `// This section is not needed for Scene-based application for supporting CarPlay.\n${commentedBlock}`;
+    if (classMatch) {
+      // Find the matching closing brace for the class
+      // We'll search from the class opening brace forward, counting braces
+      let braceCount = 0;
+      let insertIndex = -1;
+      const startPos = classMatch.index + classMatch[0].length - 1; // Position of opening brace
 
-    return src.substring(0, startIndex) + replacement + src.substring(endIndex);
+      for (let i = startPos; i < result.length; i++) {
+        if (result[i] === '{') {
+          braceCount++;
+        } else if (result[i] === '}') {
+          braceCount--;
+          if (braceCount === 0) {
+            // Found the closing brace of the class
+            insertIndex = i;
+            break;
+          }
+        }
+      }
+
+      if (insertIndex > 0) {
+        // Build the methods to insert
+        const methodsToAdd: string[] = [];
+
+        if (!hasConnectionOptionsHelper) {
+          methodsToAdd.push(`  func connectionOptionsToLaunchOptions(_ connectionOptions: UIScene.ConnectionOptions?) -> [UIApplication.LaunchOptionsKey: Any]? {
+    guard let connectionOptions = connectionOptions else {
+      return nil
+    }
+    
+    var launchOptions: [UIApplication.LaunchOptionsKey: Any] = [:]
+    
+    // Handle notification response
+    if let notificationResponse = connectionOptions.notificationResponse {
+      launchOptions[UIApplication.LaunchOptionsKey.remoteNotification] = notificationResponse.notification.request.content.userInfo
+    }
+    
+    // Handle user activities
+    if connectionOptions.userActivities.count > 0 {
+      if let userActivity = connectionOptions.userActivities.first {
+        let userActivityDictionary: [String: Any] = [
+          "UIApplicationLaunchOptionsUserActivityTypeKey": userActivity.activityType,
+          "UIApplicationLaunchOptionsUserActivityKey": userActivity
+        ]
+        launchOptions[UIApplication.LaunchOptionsKey.userActivityDictionary] = userActivityDictionary
+      }
+    }
+    
+    // Handle URL contexts
+    if let urlContext = connectionOptions.urlContexts.first {
+      launchOptions[UIApplication.LaunchOptionsKey.url] = urlContext.url
+    }
+    
+    return launchOptions.isEmpty ? nil : launchOptions
+  }`);
+        }
+
+        if (!hasStartReactNativeMethod) {
+          methodsToAdd.push(`  public func startReactNative(withWindow window: UIWindow, connectionOptions: UIScene.ConnectionOptions?) {
+    reactNativeFactory?.startReactNative(
+      withModuleName: "${moduleName}",
+      in: window,
+      launchOptions: connectionOptionsToLaunchOptions(connectionOptions))
+    window.makeKeyAndVisible()
+  }`);
+        }
+
+        if (methodsToAdd.length > 0) {
+          // Insert before the closing brace, with proper indentation
+          const beforeBrace = result.substring(0, insertIndex);
+          const afterBrace = result.substring(insertIndex);
+          const methodsCode = '\n' + methodsToAdd.join('\n\n') + '\n';
+          result = beforeBrace + methodsCode + afterBrace;
+        }
+      }
+    }
   }
 
-  return src; // Block doesn't match the expected pattern, return unchanged
+  return result;
 }
 
 function addSourceFileIfNeeded(proj: XcodeProject, file: string) {
