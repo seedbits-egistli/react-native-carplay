@@ -61,7 +61,7 @@ export const withIosCarPlay: ConfigPlugin<IosCarPlayProps> = (config, props) => 
     return config;
   });
 
-  // 2) Write Swift scene files (PhoneScene.swift, CarScene.swift)
+  // 2) Write Swift scene files (CarPlayReactNativeManager.swift, PhoneScene.swift, CarScene.swift)
   config = withDangerousMod(config, [
     'ios',
     async config => {
@@ -71,6 +71,13 @@ export const withIosCarPlay: ConfigPlugin<IosCarPlayProps> = (config, props) => 
       const destDir = path.join(iosRoot, projectName);
 
       ensureDir(destDir);
+
+      // CarPlayReactNativeManager.swift
+      const managerPath = path.join(destDir, 'CarPlayReactNativeManager.swift');
+      if (!fs.existsSync(managerPath)) {
+        const managerContents = generateCarPlayReactNativeManagerSwift();
+        fs.writeFileSync(managerPath, managerContents, 'utf-8');
+      }
 
       // PhoneScene.swift
       const phoneScenePath = path.join(destDir, 'PhoneScene.swift');
@@ -109,6 +116,7 @@ export const withIosCarPlay: ConfigPlugin<IosCarPlayProps> = (config, props) => 
     const proj: XcodeProject = config.modResults;
     const projectName = config.modRequest.projectName;
 
+    addSourceFileIfNeeded(proj, `${projectName}/CarPlayReactNativeManager.swift`);
     addSourceFileIfNeeded(proj, `${projectName}/PhoneScene.swift`);
     addSourceFileIfNeeded(proj, `${projectName}/CarScene.swift`);
     return config;
@@ -136,41 +144,100 @@ function resolveProjectName(iosRoot: string, provided?: string): string {
   );
 }
 
+function generateCarPlayReactNativeManagerSwift(): string {
+  return `import Foundation
+import UIKit
+import React
+import React_RCTAppDelegate
+import ExpoModulesCore
+import EXUpdates
+
+class CarPlayReactNativeManager {
+  static let shared = CarPlayReactNativeManager()
+  
+  private(set) var expoUpdatesStartCalled = false
+  private var readyObserver: NSObjectProtocol?
+  
+  var factory: RCTReactNativeFactory? {
+    guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+      return nil
+    }
+    return appDelegate.reactNativeFactory
+  }
+  
+  /// Check if expo-updates has finished loading
+  var isReady: Bool {
+    guard AppController.isInitialized() else { return false }
+    return AppController.sharedInstance.launchAssetUrl() != nil
+  }
+  
+  func markExpoUpdatesStartCalled() {
+    expoUpdatesStartCalled = true
+  }
+  
+  /// Wait for React Native to be ready
+  func waitForReady(completion: @escaping () -> Void) {
+    if isReady {
+      completion()
+      return
+    }
+    
+    // Listen for JS load completion
+    readyObserver = NotificationCenter.default.addObserver(
+      forName: NSNotification.Name("RCTJavaScriptDidLoadNotification"),
+      object: nil,
+      queue: .main
+    ) { [weak self] _ in
+      if let observer = self?.readyObserver {
+        NotificationCenter.default.removeObserver(observer)
+      }
+      completion()
+    }
+  }
+}
+
+`;
+}
+
 function generatePhoneSceneSwift(moduleName: string): string {
   return `import UIKit
+import UIKit
+import React
+import React_RCTAppDelegate
 import react_native_carplay
+import ExpoModulesCore
+import EXUpdates
+import ReactAppDependencyProvider
+import Expo
 #if DEBUG
 import EXDevLauncher
 #endif
 
 @objc(PhoneSceneDelegate)
 class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
-  // We need to retain the window instance in the delegate to avoid it being deallocated before the app is ready to start the React Native app.
   var window: UIWindow?
-
+  
   func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-    NSLog("<<<<<--------------------")
-    NSLog("PhoneSceneDelegate scene willConnectTo")
-    NSLog("---------------------->>>>")
-    if session.role != .windowApplication {
-      NSLog("session role: %@", String(describing: session.role))
-      return
-    }
+    guard let windowScene = scene as? UIWindowScene else { return }
+    let window = UIWindow(windowScene: windowScene)
+    self.window = window
     
-    guard let appDelegate = (UIApplication.shared.delegate as? AppDelegate) else {
-      NSLog("no app delegate")
-      return
+    let manager = CarPlayReactNativeManager.shared
+    guard let factory = manager.factory else { return }
+    
+    if !manager.expoUpdatesStartCalled {
+      // FIRST SCENE: Normal expo-updates flow
+      manager.markExpoUpdatesStartCalled()
+      factory.startReactNative(withModuleName: "${moduleName}", in: window, launchOptions: nil as [UIApplication.LaunchOptionsKey: Any]?)
+    } else if manager.isReady {
+      // SECOND SCENE, READY: Bypass expo-updates, create view from existing bridge
+      createRootViewDirectly(factory: factory, window: window)
+    } else {
+      // SECOND SCENE, LOADING: Wait for expo-updates to finish
+      manager.waitForReady { [weak self] in
+        self?.createRootViewDirectly(factory: factory, window: window)
+      }
     }
-    guard let windowScene = (scene as? UIWindowScene) else {
-      NSLog("no window scene")
-      return
-    }
-
-    // Create window and set rootViewController
-    NSLog("window scene: %@", String(describing: windowScene))
-    self.window = UIWindow(windowScene: windowScene)
-    appDelegate.startReactNative(withWindow: self.window!, connectionOptions: connectionOptions)
-    self.window!.makeKeyAndVisible()
 
     // By default, the EXDevLauncherController do the autoSetupStart right after the return of app delegate's application:didFinishLaunchingWithOptions:
     // It subscribes the didFinishLaunchingWithOptions: callback and start the React Native app after the return.
@@ -180,6 +247,22 @@ class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
     #if DEBUG
     EXDevLauncherController.sharedInstance().autoSetupStart(self.window!)
     #endif
+  }
+  
+  private func createRootViewDirectly(factory: RCTReactNativeFactory, window: UIWindow) {
+    // Use superViewWithModuleName to BYPASS the expo-updates handler
+    guard let expoFactory = factory.rootViewFactory as? ExpoReactRootViewFactory else { return }
+    
+    let rootView = expoFactory.superView(
+      withModuleName: "${moduleName}",
+      initialProperties: nil as [String: Any]?,
+      launchOptions: nil as [UIApplication.LaunchOptionsKey: Any]?
+    )
+    
+    let vc = UIViewController()
+    vc.view = rootView
+    window.rootViewController = vc
+    window.makeKeyAndVisible()
   }
 }
 
@@ -196,25 +279,65 @@ import EXDevLauncher
 
 @objc(CarSceneDelegate)
 class CarSceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
+  var interfaceController: CPInterfaceController?
+  private var hiddenWindow: UIWindow?
   
-  func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
-                                  didConnect interfaceController: CPInterfaceController) {
-    // Initialize app from scene (creates bridge if needed)
-    // Pass nil for connectionOptions since CarPlay doesn't provide them in the same way
-    guard let appDelegate = (UIApplication.shared.delegate as? AppDelegate) else {
-      NSLog("no app delegate");
-      return
+  func templateApplicationScene(
+    _ templateApplicationScene: CPTemplateApplicationScene,
+    didConnect interfaceController: CPInterfaceController
+  ) {
+    self.interfaceController = interfaceController
+    
+    let manager = CarPlayReactNativeManager.shared
+    guard let factory = manager.factory else { return }
+    
+    // Store interface controller for react-native-carplay to access
+    let store = RNCPStore.sharedManager()
+    if store?.app == nil {
+      store?.app = RNCarPlayApp()
     }
-    appDelegate.startReactNative(withWindow: templateApplicationScene.carWindow, connectionOptions: nil)
-    RNCarPlay.connect(with:interfaceController, window: templateApplicationScene.carWindow, scene: templateApplicationScene)
+    if let app = store?.app as? RNCarPlayApp {
+      app.interfaceController = interfaceController
+    }
+    
+    if !manager.expoUpdatesStartCalled {
+      // CARPLAY IS FIRST: Must start React Native
+      manager.markExpoUpdatesStartCalled()
+      
+      // Create hidden window for expo-updates callback to find
+      hiddenWindow = UIWindow(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
+      hiddenWindow?.isHidden = true
+      
+      // CRITICAL: Set appDelegate.window so getWindow() won't crash
+      let appDelegate = UIApplication.shared.delegate as? AppDelegate
+      appDelegate?.window = hiddenWindow
+      
+      // Start React Native - triggers expo-updates
+      factory.startReactNative(
+        withModuleName: "${moduleName}",
+        in: hiddenWindow!,
+        launchOptions: nil as [UIApplication.LaunchOptionsKey: Any]?
+      )
+      // JS bundle will handle CarPlay templates via react-native-carplay
+    }
+    // If Phone started first, bridge is already running
+    // JS will handle CarPlay UI automatically when it detects the connection
+    
+    RNCarPlay.connect(with: interfaceController, window: templateApplicationScene.carWindow, scene: templateApplicationScene)
     #if DEBUG
     EXDevLauncherController.sharedInstance().autoSetupStart(nil)
     #endif
-    NSLog("carplay connected");
   }
-
-  func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene, didDisconnectInterfaceController interfaceController: CPInterfaceController) {
-    NSLog("carplay disconnected");
+  
+  func templateApplicationScene(
+    _ templateApplicationScene: CPTemplateApplicationScene,
+    didDisconnectInterfaceController interfaceController: CPInterfaceController
+  ) {
+    self.interfaceController = nil
+    let store = RNCPStore.sharedManager()
+    if let app = store?.app as? RNCarPlayApp {
+      app.interfaceController = nil
+    }
     RNCarPlay.disconnect()
   }
 }
@@ -241,11 +364,12 @@ function patchAppDelegateSwift(src: string, moduleName: string): string {
       const hasWindowCreation = /window\s*=\s*UIWindow\(frame:\s*UIScreen\.main\.bounds\)/.test(
         blockContent,
       );
-      const hasMakeKeyAndVisible = /window\?\.makeKeyAndVisible\(\)/.test(blockContent);
       const hasStartReactNative =
         /factory\.startReactNative\([\s\S]*?launchOptions:\s*launchOptions\)/.test(blockContent);
 
-      if (hasWindowCreation && hasMakeKeyAndVisible && hasStartReactNative) {
+      // Comment out the block if it contains window creation and startReactNative
+      // (makeKeyAndVisible is optional - some blocks may not have it)
+      if (hasWindowCreation && hasStartReactNative) {
         // Comment out each line in the block
         const commentedBlock = blockContent
           .split('\n')
@@ -355,6 +479,34 @@ function patchAppDelegateSwift(src: string, moduleName: string): string {
   }
 
   return result;
+}
+
+function findBridgingHeader(iosRoot: string, projectName: string): string | null {
+  // Common locations for bridging headers
+  const possiblePaths = [
+    path.join(iosRoot, `${projectName}-Bridging-Header.h`),
+    path.join(iosRoot, projectName, `${projectName}-Bridging-Header.h`),
+    path.join(iosRoot, 'Bridging-Header.h'),
+  ];
+
+  for (const headerPath of possiblePaths) {
+    if (fs.existsSync(headerPath)) {
+      return headerPath;
+    }
+  }
+
+  // Try to find any bridging header in the ios directory
+  try {
+    const entries = fs.readdirSync(iosRoot);
+    const bridgingHeader = entries.find(name => name.endsWith('-Bridging-Header.h'));
+    if (bridgingHeader) {
+      return path.join(iosRoot, bridgingHeader);
+    }
+  } catch {
+    // Ignore errors
+  }
+
+  return null;
 }
 
 function addSourceFileIfNeeded(proj: XcodeProject, file: string) {
