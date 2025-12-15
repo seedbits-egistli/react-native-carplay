@@ -287,6 +287,66 @@ class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
     window.rootViewController = vc
     window.makeKeyAndVisible()
   }
+
+  // Forward custom URL scheme deep links to AppDelegate
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+      guard let context = URLContexts.first else { return }
+      let url = context.url
+      let options = context.options
+
+      // Build options dictionary mirroring UIApplication.OpenURLOptionsKey
+      var openOptions: [UIApplication.OpenURLOptionsKey: Any] = [:]
+      if let sourceApp = options.sourceApplication {
+          openOptions[.sourceApplication] = sourceApp
+      }
+      if let annotation = options.annotation {
+          openOptions[.annotation] = annotation
+      }
+      if options.openInPlace {
+          openOptions[.openInPlace] = true
+      }
+
+      // Forward to AppDelegate's application(_:open:options:)
+      if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
+          _ = appDelegate.application(UIApplication.shared, open: url, options: openOptions)
+      }
+  }
+
+  // Forward Universal Links (NSUserActivityTypeBrowsingWeb) to AppDelegate
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+      guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+
+      // Forward to AppDelegate's application(_:continue:restorationHandler:)
+      _ = appDelegate.application(
+          UIApplication.shared,
+          continue: userActivity,
+          restorationHandler: { _ in
+              // React Native typically doesn't use UI restoration.
+              // Provide an empty handler for API compatibility.
+          }
+      )
+  }
+
+  // Optional: forward scene lifecycle to AppDelegate if you rely on those
+  func sceneWillEnterForeground(_ scene: UIScene) {
+      (UIApplication.shared.delegate as? AppDelegate)?
+          .applicationWillEnterForeground(UIApplication.shared)
+  }
+
+  func sceneDidEnterBackground(_ scene: UIScene) {
+      (UIApplication.shared.delegate as? AppDelegate)?
+          .applicationDidEnterBackground(UIApplication.shared)
+  }
+
+  func sceneDidBecomeActive(_ scene: UIScene) {
+      (UIApplication.shared.delegate as? AppDelegate)?
+          .applicationDidBecomeActive(UIApplication.shared)
+  }
+
+  func sceneWillResignActive(_ scene: UIScene) {
+      (UIApplication.shared.delegate as? AppDelegate)?
+          .applicationWillResignActive(UIApplication.shared)
+  }
 }
 
 `;
