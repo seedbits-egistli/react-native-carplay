@@ -224,6 +224,8 @@ import EXDevLauncher
 class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
   var window: UIWindow?
   
+  var cachedURLContext: UIOpenURLContext?
+  
   func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
     guard let windowScene = scene as? UIWindowScene else {
       NSLog("PhoneSceneDelegate: windowScene not found")
@@ -241,8 +243,20 @@ class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
     if !manager.expoUpdatesStartCalled {
       // FIRST SCENE: Normal expo-updates flow
       manager.markExpoUpdatesStartCalled()
-      factory.startReactNative(withModuleName: "${moduleName}", in: window, launchOptions: nil as [UIApplication.LaunchOptionsKey: Any]?)
+      factory.startReactNative(withModuleName: "${moduleName}", in: window, launchOptions: nil)
       NSLog("PhoneSceneDelegate: expo-updates started")
+      cachedURLContext = connectionOptions.urlContexts.first
+      NSLog("PhoneSceneDelegate: cachedURLContext: \(cachedURLContext)")
+      // By default, the EXDevLauncherController do the autoSetupStart right after the return of app delegate's application:didFinishLaunchingWithOptions:
+      // It subscribes the didFinishLaunchingWithOptions: callback and start the React Native app after the return.
+      // However, when the app is scene-based, at the end of didFinishLaunchingWithOptions:, the app is not yet ready to start the React Native app because THERE IS NO WINDOW YET.
+      // So we need to call the autoSetupStart manually here when getting a window from the scene.
+      // This workaround requires PATCHes to expo-dev-launcher for it to not throw fatalError when the window is not yet ready.
+      #if DEBUG
+      EXDevLauncherController.sharedInstance().autoSetupStart(self.window!)
+      NSLog("PhoneSceneDelegate: autoSetupStart called")
+      #endif
+
     } else if manager.isReady {
       // SECOND SCENE, READY: Bypass expo-updates, create view from existing bridge
       createRootViewDirectly(factory: factory, window: window)
@@ -256,15 +270,20 @@ class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
       NSLog("PhoneSceneDelegate: expo-updates finished")
     }
 
-    // By default, the EXDevLauncherController do the autoSetupStart right after the return of app delegate's application:didFinishLaunchingWithOptions:
-    // It subscribes the didFinishLaunchingWithOptions: callback and start the React Native app after the return.
-    // However, when the app is scene-based, at the end of didFinishLaunchingWithOptions:, the app is not yet ready to start the React Native app because THERE IS NO WINDOW YET.
-    // So we need to call the autoSetupStart manually here when getting a window from the scene.
-    // This workaround requires PATCHes to expo-dev-launcher for it to not throw fatalError when the window is not yet ready.
-    #if DEBUG
-    EXDevLauncherController.sharedInstance().autoSetupStart(self.window!)
-    NSLog("PhoneSceneDelegate: autoSetupStart called")
-    #endif
+    if let urlContext = cachedURLContext {
+      self.scene(scene, openURLContexts: [urlContext])
+      cachedURLContext = nil
+    }
+  }
+
+  func scene(_ scene: UIScene, didConnectTo session: UISceneSession) {
+    let appDelegate = UIApplication.shared.delegate as? AppDelegate
+    NSLog("PhoneSceneDelegate: scene didConnectTo: \(scene)")
+    if let urlContext = cachedURLContext {
+      NSLog("PhoneSceneDelegate: opening URL context: \(urlContext)")
+      self.scene(scene, openURLContexts: [urlContext])
+      cachedURLContext = nil
+    }
   }
   
   private func createRootViewDirectly(factory: RCTReactNativeFactory, window: UIWindow) {
@@ -288,8 +307,9 @@ class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
     window.makeKeyAndVisible()
   }
 
-  // Forward custom URL scheme deep links to AppDelegate
-  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+  // SceneDelegate.swift
+    // Forward custom URL scheme deep links to AppDelegate
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
       guard let context = URLContexts.first else { return }
       let url = context.url
       let options = context.options
@@ -310,43 +330,43 @@ class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
       if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
           _ = appDelegate.application(UIApplication.shared, open: url, options: openOptions)
       }
-  }
+    }
 
-  // Forward Universal Links (NSUserActivityTypeBrowsingWeb) to AppDelegate
-  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
-      guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+    // Forward Universal Links (NSUserActivityTypeBrowsingWeb) to AppDelegate
+    func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
 
-      // Forward to AppDelegate's application(_:continue:restorationHandler:)
-      _ = appDelegate.application(
-          UIApplication.shared,
-          continue: userActivity,
-          restorationHandler: { _ in
-              // React Native typically doesn't use UI restoration.
-              // Provide an empty handler for API compatibility.
-          }
-      )
-  }
+        // Forward to AppDelegate's application(_:continue:restorationHandler:)
+        _ = appDelegate.application(
+            UIApplication.shared,
+            continue: userActivity,
+            restorationHandler: { _ in
+                // React Native typically doesn't use UI restoration.
+                // Provide an empty handler for API compatibility.
+            }
+        )
+    }
 
-  // Optional: forward scene lifecycle to AppDelegate if you rely on those
-  func sceneWillEnterForeground(_ scene: UIScene) {
-      (UIApplication.shared.delegate as? AppDelegate)?
-          .applicationWillEnterForeground(UIApplication.shared)
-  }
+    // Optional: forward scene lifecycle to AppDelegate if you rely on those
+    func sceneWillEnterForeground(_ scene: UIScene) {
+        (UIApplication.shared.delegate as? AppDelegate)?
+            .applicationWillEnterForeground(UIApplication.shared)
+    }
 
-  func sceneDidEnterBackground(_ scene: UIScene) {
-      (UIApplication.shared.delegate as? AppDelegate)?
-          .applicationDidEnterBackground(UIApplication.shared)
-  }
+    func sceneDidEnterBackground(_ scene: UIScene) {
+        (UIApplication.shared.delegate as? AppDelegate)?
+            .applicationDidEnterBackground(UIApplication.shared)
+    }
 
-  func sceneDidBecomeActive(_ scene: UIScene) {
-      (UIApplication.shared.delegate as? AppDelegate)?
-          .applicationDidBecomeActive(UIApplication.shared)
-  }
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        (UIApplication.shared.delegate as? AppDelegate)?
+            .applicationDidBecomeActive(UIApplication.shared)
+    }
 
-  func sceneWillResignActive(_ scene: UIScene) {
-      (UIApplication.shared.delegate as? AppDelegate)?
-          .applicationWillResignActive(UIApplication.shared)
-  }
+    func sceneWillResignActive(_ scene: UIScene) {
+        (UIApplication.shared.delegate as? AppDelegate)?
+            .applicationWillResignActive(UIApplication.shared)
+    }
 }
 
 `;
@@ -414,10 +434,6 @@ class CarSceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     
     RNCarPlay.connect(with: interfaceController, window: templateApplicationScene.carWindow, scene: templateApplicationScene)
     NSLog("CarSceneDelegate: RNCarPlay connected")
-    #if DEBUG
-    EXDevLauncherController.sharedInstance().autoSetupStart(nil)
-    NSLog("CarSceneDelegate: autoSetupStart called")
-    #endif
   }
   
   func templateApplicationScene(
@@ -432,6 +448,68 @@ class CarSceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     }
     RNCarPlay.disconnect()
     NSLog("CarSceneDelegate: RNCarPlay disconnected")
+  }
+
+  // Forward custom URL scheme deep links to AppDelegate
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    guard let context = URLContexts.first else { return }
+    let url = context.url
+    let options = context.options
+
+    // Build options dictionary mirroring UIApplication.OpenURLOptionsKey
+    var openOptions: [UIApplication.OpenURLOptionsKey: Any] = [:]
+    if let sourceApp = options.sourceApplication {
+        openOptions[.sourceApplication] = sourceApp
+    }
+    if let annotation = options.annotation {
+        openOptions[.annotation] = annotation
+    }
+    if options.openInPlace {
+        openOptions[.openInPlace] = true
+    }
+
+    // Forward to AppDelegate's application(_:open:options:)
+    if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
+        _ = appDelegate.application(UIApplication.shared, open: url, options: openOptions)
+    }
+  }
+
+  // Forward Universal Links (NSUserActivityTypeBrowsingWeb) to AppDelegate
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+      guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+
+      NSLog("CarSceneDelegate: scene continue userActivity: \(userActivity)")
+
+      // Forward to AppDelegate's application(_:continue:restorationHandler:)
+      _ = appDelegate.application(
+          UIApplication.shared,
+          continue: userActivity,
+          restorationHandler: { _ in
+              // React Native typically doesn't use UI restoration.
+              // Provide an empty handler for API compatibility.
+          }
+      )
+  }
+
+  // Optional: forward scene lifecycle to AppDelegate if you rely on those
+  func sceneWillEnterForeground(_ scene: UIScene) {
+      (UIApplication.shared.delegate as? AppDelegate)?
+          .applicationWillEnterForeground(UIApplication.shared)
+  }
+
+  func sceneDidEnterBackground(_ scene: UIScene) {
+      (UIApplication.shared.delegate as? AppDelegate)?
+          .applicationDidEnterBackground(UIApplication.shared)
+  }
+
+  func sceneDidBecomeActive(_ scene: UIScene) {
+      (UIApplication.shared.delegate as? AppDelegate)?
+          .applicationDidBecomeActive(UIApplication.shared)
+  }
+
+  func sceneWillResignActive(_ scene: UIScene) {
+      (UIApplication.shared.delegate as? AppDelegate)?
+          .applicationWillResignActive(UIApplication.shared)
   }
 }
 `;
