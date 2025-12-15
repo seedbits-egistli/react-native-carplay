@@ -160,6 +160,7 @@ class CarPlayReactNativeManager {
   
   var factory: RCTReactNativeFactory? {
     guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+      NSLog("CarPlayReactNativeManager:AppDelegate not found")
       return nil
     }
     return appDelegate.reactNativeFactory
@@ -167,17 +168,22 @@ class CarPlayReactNativeManager {
   
   /// Check if expo-updates has finished loading
   var isReady: Bool {
-    guard AppController.isInitialized() else { return false }
+    guard AppController.isInitialized() else {
+      NSLog("CarPlayReactNativeManager: AppController not initialized")
+      return false
+    }
     return AppController.sharedInstance.launchAssetUrl() != nil
   }
   
   func markExpoUpdatesStartCalled() {
     expoUpdatesStartCalled = true
+    NSLog("CarPlayReactNativeManager: expoUpdatesStartCalled")
   }
   
   /// Wait for React Native to be ready
   func waitForReady(completion: @escaping () -> Void) {
     if isReady {
+      NSLog("CarPlayReactNativeManager: isReady called")
       completion()
       return
     }
@@ -188,6 +194,7 @@ class CarPlayReactNativeManager {
       object: nil,
       queue: .main
     ) { [weak self] _ in
+      NSLog("CarPlayReactNativeManager: RCTJavaScriptDidLoadNotification received")
       if let observer = self?.readyObserver {
         NotificationCenter.default.removeObserver(observer)
       }
@@ -218,25 +225,35 @@ class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
   var window: UIWindow?
   
   func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-    guard let windowScene = scene as? UIWindowScene else { return }
+    guard let windowScene = scene as? UIWindowScene else {
+      NSLog("PhoneSceneDelegate: windowScene not found")
+      return
+    }
     let window = UIWindow(windowScene: windowScene)
     self.window = window
     
     let manager = CarPlayReactNativeManager.shared
-    guard let factory = manager.factory else { return }
+    guard let factory = manager.factory else {
+      NSLog("PhoneSceneDelegate: factory not found")
+      return
+    }
     
     if !manager.expoUpdatesStartCalled {
       // FIRST SCENE: Normal expo-updates flow
       manager.markExpoUpdatesStartCalled()
       factory.startReactNative(withModuleName: "${moduleName}", in: window, launchOptions: nil as [UIApplication.LaunchOptionsKey: Any]?)
+      NSLog("PhoneSceneDelegate: expo-updates started")
     } else if manager.isReady {
       // SECOND SCENE, READY: Bypass expo-updates, create view from existing bridge
       createRootViewDirectly(factory: factory, window: window)
+      NSLog("PhoneSceneDelegate: root view created")
     } else {
       // SECOND SCENE, LOADING: Wait for expo-updates to finish
       manager.waitForReady { [weak self] in
         self?.createRootViewDirectly(factory: factory, window: window)
+        NSLog("PhoneSceneDelegate: root view created")
       }
+      NSLog("PhoneSceneDelegate: expo-updates finished")
     }
 
     // By default, the EXDevLauncherController do the autoSetupStart right after the return of app delegate's application:didFinishLaunchingWithOptions:
@@ -246,19 +263,25 @@ class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
     // This workaround requires PATCHes to expo-dev-launcher for it to not throw fatalError when the window is not yet ready.
     #if DEBUG
     EXDevLauncherController.sharedInstance().autoSetupStart(self.window!)
+    NSLog("PhoneSceneDelegate: autoSetupStart called")
     #endif
   }
   
   private func createRootViewDirectly(factory: RCTReactNativeFactory, window: UIWindow) {
     // Use superViewWithModuleName to BYPASS the expo-updates handler
-    guard let expoFactory = factory.rootViewFactory as? ExpoReactRootViewFactory else { return }
-    
+    guard let expoFactory = factory.rootViewFactory as? ExpoReactRootViewFactory else {
+      NSLog("PhoneSceneDelegate: expoFactory not found")
+      return
+    }
+
+    NSLog("PhoneSceneDelegate: superView called")
     let rootView = expoFactory.superView(
       withModuleName: "${moduleName}",
       initialProperties: nil as [String: Any]?,
       launchOptions: nil as [UIApplication.LaunchOptionsKey: Any]?
     )
-    
+    NSLog("PhoneSceneDelegate: rootView created")
+
     let vc = UIViewController()
     vc.view = rootView
     window.rootViewController = vc
@@ -289,21 +312,26 @@ class CarSceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     self.interfaceController = interfaceController
     
     let manager = CarPlayReactNativeManager.shared
-    guard let factory = manager.factory else { return }
+    guard let factory = manager.factory else {
+      NSLog("CarSceneDelegate: factory not found")
+      return
+    }
     
     // Store interface controller for react-native-carplay to access
     let store = RNCPStore.sharedManager()
     if store?.app == nil {
       store?.app = RNCarPlayApp()
+      NSLog("CarSceneDelegate: app created")
     }
     if let app = store?.app as? RNCarPlayApp {
       app.interfaceController = interfaceController
+      NSLog("CarSceneDelegate: interfaceController set")
     }
     
     if !manager.expoUpdatesStartCalled {
       // CARPLAY IS FIRST: Must start React Native
       manager.markExpoUpdatesStartCalled()
-      
+      NSLog("CarSceneDelegate: expo-updates started")
       // Create hidden window for expo-updates callback to find
       hiddenWindow = UIWindow(frame: CGRect(x: 0, y: 0, width: 1, height: 1))
       hiddenWindow?.isHidden = true
@@ -315,17 +343,20 @@ class CarSceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
       // Start React Native - triggers expo-updates
       factory.startReactNative(
         withModuleName: "${moduleName}",
-        in: hiddenWindow!,
+        in: templateApplicationScene.carWindow,
         launchOptions: nil as [UIApplication.LaunchOptionsKey: Any]?
       )
+      NSLog("CarSceneDelegate: React Native started")
       // JS bundle will handle CarPlay templates via react-native-carplay
     }
     // If Phone started first, bridge is already running
     // JS will handle CarPlay UI automatically when it detects the connection
     
     RNCarPlay.connect(with: interfaceController, window: templateApplicationScene.carWindow, scene: templateApplicationScene)
+    NSLog("CarSceneDelegate: RNCarPlay connected")
     #if DEBUG
     EXDevLauncherController.sharedInstance().autoSetupStart(nil)
+    NSLog("CarSceneDelegate: autoSetupStart called")
     #endif
   }
   
@@ -337,8 +368,10 @@ class CarSceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     let store = RNCPStore.sharedManager()
     if let app = store?.app as? RNCarPlayApp {
       app.interfaceController = nil
+      NSLog("CarSceneDelegate: interfaceController set to nil")
     }
     RNCarPlay.disconnect()
+    NSLog("CarSceneDelegate: RNCarPlay disconnected")
   }
 }
 `;
