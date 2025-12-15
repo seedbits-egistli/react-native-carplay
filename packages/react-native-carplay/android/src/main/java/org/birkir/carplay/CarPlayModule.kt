@@ -226,12 +226,12 @@ class CarPlayModule internal constructor(private val reactContext: ReactApplicat
   }
 
   @ReactMethod
-  fun presentTemplate(templateId: String?, animated: Boolean?) {
+  fun presentTemplate(animated: Boolean?) {
     // void
   }
 
   @ReactMethod
-  fun dismissTemplate(templateId: String?, animated: Boolean?) {
+  fun dismissTemplate(animated: Boolean?) {
     // void
   }
 
