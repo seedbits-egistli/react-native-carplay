@@ -123,6 +123,8 @@ RCT_EXPORT_MODULE();
         // poi
         @"didSelectPointOfInterest",
         @"didChangeMapRegion",
+        @"primaryButtonPressed",
+        @"secondaryButtonPressed",
         // map
         @"mapButtonPressed",
         @"didUpdatePanGestureWithTranslation",
