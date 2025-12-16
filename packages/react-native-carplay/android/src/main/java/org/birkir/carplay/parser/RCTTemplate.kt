@@ -67,7 +67,8 @@ abstract class RCTTemplate(
   protected fun parseItemList(
     items: ReadableArray?,
     type: ItemListType = ItemListType.Row,
-    isMapWithContentTemplate: Boolean = false
+    isMapWithContentTemplate: Boolean = false,
+    noItemsMessage: String?
   ): ItemList {
     return ItemList.Builder().apply {
       var selectedIndex: Int? = null
@@ -80,7 +81,7 @@ abstract class RCTTemplate(
         ItemListType.RouteList -> ConstraintManager.CONTENT_LIMIT_TYPE_ROUTE_LIST
       }
 
-      setNoItemsMessage("No items available")
+      setNoItemsMessage(SpannableString(noItemsMessage ?: "No items available"))
 
       items?.let {
         for (i in 0 until getMaxContentSize(

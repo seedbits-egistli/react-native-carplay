@@ -24,6 +24,12 @@ export type MapWithGridTemplateConfig = AndroidNavigationBaseTemplateConfig &
     actions?: [AndroidAction] | [AndroidAction, AndroidAction];
 
     buttons: Array<AndroidGridButton>;
+    /**
+     * Message to display when there are no items in the grid.
+     * This message will be displayed in the list when there are no items.
+     * If not set, the default message "No items available" will be used.
+     */
+    noItemsMessage?: string;
   };
 
 /**

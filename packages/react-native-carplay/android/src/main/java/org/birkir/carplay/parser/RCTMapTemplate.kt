@@ -73,7 +73,7 @@ class RCTMapTemplate(
             setCurrentLocationEnabled(props.getBoolean("currentLocationEnabled"))
           }
           headerAction?.let { setHeaderAction(it) }
-          setItemList(parseItemList(props.getArray("items"), ItemListType.PlaceListNavigation))
+          setItemList(parseItemList(props.getArray("items"), ItemListType.PlaceListNavigation, noItemsMessage = props.getString("noItemsMessage")))
           setOnContentRefreshListener {
             // @todo eventEmitter?.contentDidRefresh
           }
@@ -86,7 +86,7 @@ class RCTMapTemplate(
           actionStrip?.let { setActionStrip(it) }
           header?.let { setHeader(it) }
           props.getArray("items")?.let {
-            setItemList(parseItemList(it, ItemListType.PlaceListNavigation))
+            setItemList(parseItemList(it, ItemListType.PlaceListNavigation, noItemsMessage = props.getString("noItemsMessage")))
           }
           setLoading(props.isLoading())
           mapActionStrip?.let { setActionStrip(it) }
@@ -103,7 +103,7 @@ class RCTMapTemplate(
           header?.let { setHeader(it) }
           headerAction?.let { setHeaderAction(headerAction) }
           props.getArray("items")?.let {
-            setItemList(parseItemList(it, ItemListType.RouteList))
+            setItemList(parseItemList(it, ItemListType.RouteList, noItemsMessage = props.getString("noItemsMessage")))
           }
           setLoading(props.isLoading())
           mapActionStrip?.let { setMapActionStrip(it) }
@@ -137,7 +137,7 @@ class RCTMapTemplate(
         return MapTemplate.Builder().apply {
           header?.let { setHeader(it) }
           props.getArray("items")?.let {
-            setItemList(parseItemList(it))
+            setItemList(parseItemList(it, noItemsMessage = props.getString("noItemsMessage")))
           }
           actionStrip?.let { setActionStrip(it) }
           setMapController(mapController)

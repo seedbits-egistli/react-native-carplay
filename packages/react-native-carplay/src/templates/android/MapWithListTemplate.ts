@@ -23,6 +23,12 @@ export type MapWithListTemplateConfig = AndroidNavigationBaseTemplateConfig &
      * This template allows up to 2 Actions. Of the 2 allowed Actions, one of them can contain a title as set via setTitle. Otherwise, only Actions with icons are allowed.
      */
     actions?: [AndroidAction] | [AndroidAction, AndroidAction];
+    /**
+     * Message to display when there are no items in the list.
+     * This message will be displayed in the list when there are no items.
+     * If not set, the default message "No items available" will be used.
+     */
+    noItemsMessage?: string;
   };
 
 /**

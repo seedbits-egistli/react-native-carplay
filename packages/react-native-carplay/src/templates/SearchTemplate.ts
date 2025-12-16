@@ -69,6 +69,12 @@ export interface SearchTemplateConfig extends TemplateConfig {
    * @namespace Android
    */
   showKeyboardByDefault?: boolean;
+  /**
+   * Message to display when there are no items in the list.
+   * This message will be displayed in the list when there are no items.
+   * If not set, the default message "No items available" will be used.
+   */
+  noItemsMessage?: string;
 }
 
 export class SearchTemplate extends Template<SearchTemplateConfig> {

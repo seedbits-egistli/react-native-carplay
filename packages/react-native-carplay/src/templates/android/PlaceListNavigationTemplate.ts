@@ -40,6 +40,12 @@ export interface PlaceListNavigationTemplateConfig extends AndroidNavigationBase
    * Title for the map
    */
   title?: string;
+  /**
+   * Message to display when there are no items in the list.
+   * This message will be displayed in the list when there are no items.
+   * If not set, the default message "No items available" will be used.
+   */
+  noItemsMessage?: string;
 }
 
 /**

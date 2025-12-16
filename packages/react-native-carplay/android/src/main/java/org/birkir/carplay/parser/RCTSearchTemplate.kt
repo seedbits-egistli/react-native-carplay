@@ -36,7 +36,7 @@ class RCTSearchTemplate(
         return@apply
       }
       
-      props.getArray("items")?.let { setItemList(parseItemList(it)) }
+      props.getArray("items")?.let { setItemList(parseItemList(it, noItemsMessage = props.getString("noItemsMessage"))) }
     }.build()
   }
 

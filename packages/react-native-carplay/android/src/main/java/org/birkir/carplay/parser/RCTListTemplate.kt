@@ -53,7 +53,7 @@ class RCTListTemplate(
       // Single List
       singleListItems?.let {
         setSingleList(
-          parseItemList(it)
+          parseItemList(it, noItemsMessage = props.getString("noItemsMessage"))
         )
         return@apply
       }
@@ -67,7 +67,7 @@ class RCTListTemplate(
             sectionMap.getArray("items")?.let { itemsArray ->
               addSectionedList(
                 SectionedItemList.create(
-                  parseItemList(itemsArray),
+                  parseItemList(itemsArray, noItemsMessage = props.getString("noItemsMessage")),
                   header ?: "Missing title"
                 )
               )
