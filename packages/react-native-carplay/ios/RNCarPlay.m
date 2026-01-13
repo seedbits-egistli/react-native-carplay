@@ -831,6 +831,17 @@ RCT_EXPORT_METHOD(updatePointOfInterestTemplate:(NSString *)templateId items:(NS
     }
 }
 
+RCT_EXPORT_METHOD(updatePointOfInterestTemplateSelectedIndex:(NSString *)templateId index:(NSInteger)index) {
+    RNCPStore *store = [RNCPStore sharedManager];
+    CPTemplate *template = [store findTemplateById:templateId];
+    if (template && [template isKindOfClass:[CPPointOfInterestTemplate class]]) {
+        CPPointOfInterestTemplate *poiTemplate = (CPPointOfInterestTemplate*) template;
+        [poiTemplate setSelectedIndex:index];
+    } else {
+        NSLog(@"Failed to find template %@", template);
+    }
+}
+
 RCT_EXPORT_METHOD(updateInformationTemplateItems:(NSString *)templateId items:(NSArray*)items) {
     RNCPStore *store = [RNCPStore sharedManager];
     CPTemplate *template = [store findTemplateById:templateId];

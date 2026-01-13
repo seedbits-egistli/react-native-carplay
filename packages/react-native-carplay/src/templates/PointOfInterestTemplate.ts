@@ -81,4 +81,8 @@ export class PointOfInterestTemplate extends Template<PointOfInterestTemplateCon
     this.config = { ...this.config, items };
     return CarPlay.bridge.updatePointOfInterestTemplate(this.id, super.parseConfig({ items }));
   };
+
+  public updateSelectedIndex = (index: number) => {
+    return CarPlay.bridge.updatePointOfInterestTemplateSelectedIndex(this.id, index);
+  };
 }
