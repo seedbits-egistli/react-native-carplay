@@ -77,9 +77,15 @@ export class PointOfInterestTemplate extends Template<PointOfInterestTemplateCon
     };
   }
 
-  public updatePointsOfInterest = (items: PointOfInterestItem[]) => {
-    this.config = { ...this.config, items };
-    return CarPlay.bridge.updatePointOfInterestTemplate(this.id, super.parseConfig({ items }));
+  public updatePointsOfInterest = (items: PointOfInterestItem[], title?: string) => {
+    const config: { items: PointOfInterestItem[]; title?: string } = { items };
+    if (title !== undefined) {
+      this.config = { ...this.config, items, title };
+      config.title = title;
+    } else {
+      this.config = { ...this.config, items };
+    }
+    return CarPlay.bridge.updatePointOfInterestTemplate(this.id, super.parseConfig(config));
   };
 
   public updateSelectedIndex = (index: number) => {

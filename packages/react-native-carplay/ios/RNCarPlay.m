@@ -826,6 +826,10 @@ RCT_EXPORT_METHOD(updatePointOfInterestTemplate:(NSString *)templateId items:(NS
         NSArray<__kindof CPPointOfInterest *> * items = [self parsePointOfInterestItems:_items templateId:templateId];
         
         [poiTemplate setPointsOfInterest:items selectedIndex:NSNotFound];
+
+        if (config[@"title"] != nil) {
+            poiTemplate.title = [RCTConvert NSString:config[@"title"]];
+        }
     } else {
         NSLog(@"Failed to find template %@", template);
     }
