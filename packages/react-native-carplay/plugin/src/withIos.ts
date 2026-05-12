@@ -491,13 +491,15 @@ class CarSceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
       )
   }
 
-  // Optional: forward scene lifecycle to AppDelegate if you rely on those
+  // CarPlay.md: notify JS when this CarPlay scene becomes visible / hidden (e.g. user switches to another car app).
   func sceneWillEnterForeground(_ scene: UIScene) {
+      RNCarPlay.stateChanged(true)
       (UIApplication.shared.delegate as? AppDelegate)?
           .applicationWillEnterForeground(UIApplication.shared)
   }
 
   func sceneDidEnterBackground(_ scene: UIScene) {
+      RNCarPlay.stateChanged(false)
       (UIApplication.shared.delegate as? AppDelegate)?
           .applicationDidEnterBackground(UIApplication.shared)
   }
