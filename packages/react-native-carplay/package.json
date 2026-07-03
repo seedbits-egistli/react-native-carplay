@@ -6,6 +6,7 @@
   "react-native": "src/index.ts",
   "source": "src/index.ts",
   "files": [
+    "app.plugin.js",
     "src",
     "lib",
     "ios",
